@@ -23,7 +23,7 @@ if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
     Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
     
     # Refresh environment variables
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    refreshenv
 } else {
     Write-Host "Chocolatey already installed" -ForegroundColor Green
 }
@@ -74,11 +74,11 @@ Write-Host "Installing Visual Studio Code..." -ForegroundColor Green
 choco install vscode -y
 
 # Install GitHub Desktop
-Write-Host "🐙 Installing GitHub Desktop..." -ForegroundColor Green
+Write-Host "Installing GitHub Desktop..." -ForegroundColor Green
 choco install github-desktop -y
 
 # Install Postman
-Write-Host "📮 Installing Postman..." -ForegroundColor Green
+Write-Host "Installing Postman..." -ForegroundColor Green
 choco install postman -y
 
 # Install Docker Desktop
@@ -122,15 +122,16 @@ Write-Host "Installation Complete!" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Refresh environment to get new PATH
-$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+Write-Host "Refreshing environment variables..." -ForegroundColor Green
+refreshenv
 
-Write-Host "Installed versions:" -ForegroundColor Yellow
-Write-Host "-------------------" -ForegroundColor Yellow
-if (Get-Command git -ErrorAction SilentlyContinue) { git --version }
-if (Get-Command python -ErrorAction SilentlyContinue) { python --version }
-if (Get-Command node -ErrorAction SilentlyContinue) { node --version }
-if (Get-Command npm -ErrorAction SilentlyContinue) { npm --version }
+Write-Host 'Installed versions:' -ForegroundColor Yellow
+Write-Host '-------------------' -ForegroundColor Yellow
+if (Get-Command git -ErrorAction SilentlyContinue)   { git --version }
+if (Get-Command python -ErrorAction SilentlyContinue){ python --version }
+if (Get-Command node -ErrorAction SilentlyContinue)  { node --version }
+if (Get-Command npm -ErrorAction SilentlyContinue)   { npm --version }
+
 
 Write-Host ""
 Write-Host "Notes:" -ForegroundColor Yellow
