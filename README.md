@@ -6,6 +6,7 @@ A collection of useful shell scripts for setting up development environments.
 
 - `setup_mac.sh` - Automated setup script for macOS development environment
 - `setup_windows.ps1` - Automated setup script for Windows development environment
+- `setup_bazzite.sh` - Automated setup script for Bazzite Linux development environment
 - `restore_win10_rightclick.ps1` - Restore Windows 10 right-click menu on Windows 11
 - `restore_win11_rightclick.ps1` - Restore Windows 11 right-click menu (revert to default)
 
@@ -27,6 +28,15 @@ Run in PowerShell as Administrator:
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
 .\setup_windows.ps1
+```
+
+### Bazzite Linux
+
+Run with sudo:
+
+```bash
+chmod +x setup_bazzite.sh
+sudo bash setup_bazzite.sh
 ```
 
 ## Description
