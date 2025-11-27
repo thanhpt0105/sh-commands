@@ -131,6 +131,38 @@ echo ""
 echo "📮 Installing Postman..."
 flatpak install -y flathub com.getpostman.Postman
 
+echo ""
+echo "⌨️ Installing Vietnamese keyboard support (fcitx5 + Unikey)..."
+IM_PKGS=(fcitx5-gtk fcitx5-qt5 fcitx5-unikey)
+if command -v fcitx5 >/dev/null 2>&1; then
+    echo "✅ fcitx5 already present; skipping."
+else
+    echo "📦 Installing: ${IM_PKGS[*]}"
+    if command -v rpm-ostree >/dev/null 2>&1; then
+        if ! sudo rpm-ostree install "${IM_PKGS[@]}"; then
+            echo "⚠️  Failed to install fcitx5 packages with rpm-ostree."
+            echo "   You can try installing these packages with dnf or install the Flatpak Chromium/other keymaps if needed."
+        fi
+    else
+        if ! sudo dnf install -y "${IM_PKGS[@]}"; then
+            echo "⚠️  dnf install failed for fcitx5 packages. Please run as root or verify your dnf repos."
+        fi
+    fi
+fi
+
+# Configure environment variables needed by fcitx5 so GTK/QT apps use it
+FCITX_ENV_CONTENT="export GTK_IM_MODULE=fcitx\nexport QT_IM_MODULE=fcitx\nexport XMODIFIERS=@im=fcitx"
+if sudo test -w /etc >/dev/null 2>&1; then
+    echo "🔧 Creating system-wide environment configuration for fcitx5..."
+    echo -e "$FCITX_ENV_CONTENT" | sudo tee /etc/profile.d/fcitx5.sh >/dev/null
+else
+    echo "🔧 Creating user-level environment configuration for fcitx5 in ~/.xprofile..."
+    grep -q 'GTK_IM_MODULE=fcitx' "$HOME/.xprofile" >/dev/null 2>&1 || printf "%b\n" "$FCITX_ENV_CONTENT" >> "$HOME/.xprofile"
+fi
+
+echo "💡 After this change, please log out and log back in (or reboot) to enable fcitx5 as your input method."
+echo "💡 To configure Unikey (Vietnamese), launch the fcitx5 configuration tool: 'fcitx5-configtool' or 'fcitx5-config-qt' and add 'Unikey' to your Input Method list."
+
 # echo "🐙 Installing GitHub Desktop..."
 # flatpak install -y flathub io.github.shiftey.Desktop
 
@@ -144,6 +176,30 @@ flatpak install -y flathub com.getpostman.Postman
 # flatpak install -y flathub org.gimp.GIMP
 
 echo ""
+echo "🖼️ Fix terminal / Bazzite flicker (GSK_RENDERER workaround)"
+# Some environments show flickering in GTK terminal apps or the desktop (Bazzite). For many
+# users setting GSK_RENDERER=gl forces the GL renderer and can resolve flicker.
+# We prefer system-wide configuration in /etc/profile.d if writable, otherwise we
+# append to the user's ~/.bashrc so it is present in terminal shells.
+GSK_LINE='export GSK_RENDERER="gl"'
+if sudo test -w /etc >/dev/null 2>&1; then
+    # Make sure we don't add duplicate lines
+    if sudo grep -qxF "$GSK_LINE" /etc/profile.d/gsk_renderer.sh 2>/dev/null; then
+        echo "✅ GSK_RENDERER already set system-wide; skipping."
+    else
+        echo "🔧 Setting GSK_RENDERER system-wide to 'gl' to reduce GTK flicker..."
+        echo "$GSK_LINE" | sudo tee /etc/profile.d/gsk_renderer.sh >/dev/null
+    fi
+else
+    # Append to ~/.bashrc only if not already present
+    if grep -qxF "$GSK_LINE" "$HOME/.bashrc" >/dev/null 2>&1; then
+        echo "✅ GSK_RENDERER already present in ~/.bashrc; skipping."
+    else
+        echo "🔧 Adding GSK_RENDERER=gl to ~/.bashrc to help with flicker issues..."
+        echo "$GSK_LINE" >> "$HOME/.bashrc"
+    fi
+fi
+echo "💡 Note: Some desktop sessions read ~/.xprofile or /etc/profile.d; if you still see flicker after logging back in, try adding the same line to ~/.xprofile or /etc/profile.d/gsk_renderer.sh (as administrator)."
 echo "============================================"
 echo "Setup Complete!"
 echo "============================================"
@@ -156,6 +212,9 @@ echo "  - GitHub Desktop"
 echo "  - Discord"
 echo "  - Obsidian"
 echo "  - GIMP"
+echo ""
+echo "✅ Input Method:"
+echo "  - Vietnamese input (fcitx5 + Unikey)" 
 echo ""
 echo "✅ Development Tools (layered):"
 echo "  - Node.js & npm"
