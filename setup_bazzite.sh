@@ -1,110 +1,128 @@
 #!/bin/bash
 
-# Script to set up a fresh Bazzite Linux system with development applications
-# Run with: bash setup_bazzite.sh
+# Bazzite Linux Fresh Setup Script
+# This script sets up development tools and applications on a fresh Bazzite installation
+# Note: Bazzite comes with Steam, Python, and Git pre-installed
 
 set -e  # Exit on error
 
 echo "============================================"
-echo "Bazzite Linux Setup Script"
+echo "Bazzite Fresh Setup Script"
 echo "============================================"
 echo ""
 
-# Check if running as root or with sudo
-if [[ $EUID -ne 0 ]]; then
-    echo "⚠️  This script needs to be run with sudo"
-    echo "   Run: sudo bash setup_bazzite.sh"
-    echo ""
-    exit 1
+# Update system first
+echo "🔄 Updating system..."
+rpm-ostree upgrade
+echo ""
+
+# Install Flatpak if not available
+echo "📦 Ensuring Flatpak is installed..."
+if ! command -v flatpak >/dev/null 2>&1; then
+    rpm-ostree install flatpak
+    echo "⚠️  Flatpak installed - you may need to reboot before installing Flatpak apps"
 fi
-
-echo "📦 Updating system packages..."
-dnf update -y
-
-echo ""
-echo "============================================"
-echo "Installing Applications"
-echo "============================================"
 echo ""
 
-# Install Google Chrome
-echo "🌐 Installing Google Chrome..."
-dnf install -y google-chrome-stable
+# Ensure Flathub is enabled
+echo "📦 Ensuring Flathub repository is enabled..."
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+echo ""
 
-# Install p7zip (7-Zip for Linux)
-# echo "📦 Installing p7zip (7-Zip)..."
-# dnf install -y p7zip p7zip-plugins
+# Install development tools via rpm-ostree (requires reboot)
+echo "============================================"
+echo "Installing Development Tools"
+echo "============================================"
+echo ""
 
-# Install Python (latest version)
-# echo "🐍 Installing Python (latest)..."
-# dnf install -y python3 python3-pip python3-devel
+LAYER_PKGS=(
+    nodejs
+    npm
+    gcc
+    gcc-c++
+    make
+    cmake
+    java-latest-openjdk
+    vim
+    neovim
+)
 
-# Install Node.js (latest LTS version)
-echo "📗 Installing Node.js (latest LTS)..."
-dnf install -y nodejs npm
+echo "📦 Layering packages: ${LAYER_PKGS[*]}"
+rpm-ostree install "${LAYER_PKGS[@]}"
+echo ""
 
-# Install Visual Studio Code
+# Install GUI applications via Flatpak
+echo "============================================"
+echo "Installing GUI Applications"
+echo "============================================"
+echo ""
+
 echo "💻 Installing Visual Studio Code..."
-rpm --import https://packages.microsoft.com/keys/microsoft.asc
-dnf install -y code
-
-# Install Postman
-echo "📮 Installing Postman..."
-dnf install -y postman
-
-# Install Docker & Docker Engine
-echo "🐳 Installing Docker..."
-dnf install -y docker docker-compose
-
-# Start and enable Docker
-systemctl enable docker
-systemctl start docker
-
-# Add current user to docker group (requires logout/login or newgrp)
-if ! groups "$SUDO_USER" | grep -q docker; then
-    usermod -aG docker "$SUDO_USER"
-    echo "⚠️  Added $SUDO_USER to docker group (requires logout/login to take effect)"
+if command -v code >/dev/null 2>&1; then
+    echo "✅ VS Code already installed; skipping."
+else
+    sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+    sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
+    rpm-ostree install code
 fi
+echo ""
 
-# Install KDE Plasma tweaks and tools
-# echo "🎨 Installing KDE Plasma tools..."
-# dnf install -y plasma-workspace-x11-wayland sddm-kcm kde-applications
+echo "🌐 Installing Google Chrome..."
+if command -v google-chrome >/dev/null 2>&1; then
+    echo "✅ Google Chrome already installed; skipping."
+else
+    sudo rpm --import https://dl.google.com/linux/linux_signing_key.pub
+    sudo sh -c 'echo -e "[google-chrome]\nname=google-chrome\nbaseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64\nenabled=1\ngpgcheck=1\ngpgkey=https://dl.google.com/linux/linux_signing_key.pub" > /etc/yum.repos.d/google-chrome.repo'
+    rpm-ostree install google-chrome-stable
+fi
+echo ""
 
-# Install Dolphin file manager extensions
-# echo "📁 Installing Dolphin file manager..."
-# dnf install -y dolphin dolphin-plugins
+echo "📮 Installing Postman..."
+flatpak install -y flathub com.getpostman.Postman
 
-# Install VLC (media player)
-echo "🎬 Installing VLC..."
-dnf install -y vlc
+echo "🐙 Installing GitHub Desktop..."
+flatpak install -y flathub io.github.shiftey.Desktop
 
-# Install build essentials for development
-echo "🔨 Installing development tools..."
-dnf install -y gcc g++ make cmake
+echo "💬 Installing Discord..."
+flatpak install -y flathub com.discordapp.Discord
 
-# Install Java Development Kit
-# echo "☕ Installing Java (OpenJDK)..."
-# dnf install -y java-latest-openjdk java-latest-openjdk-devel
+echo "📝 Installing Obsidian..."
+flatpak install -y flathub md.obsidian.Obsidian
+
+echo "🎨 Installing GIMP..."
+flatpak install -y flathub org.gimp.GIMP
 
 echo ""
 echo "============================================"
-echo "Installation Complete!"
+echo "Setup Complete!"
 echo "============================================"
 echo ""
-echo "Installed versions:"
-echo "-------------------"
-python3 --version
-node --version
-npm --version
-git --version
-java -version 2>&1 | head -2
+echo "✅ Installed Applications:"
+echo "  - Visual Studio Code"
+echo "  - Google Chrome"
+echo "  - Postman"
+echo "  - GitHub Desktop"
+echo "  - Discord"
+echo "  - Obsidian"
+echo "  - GIMP"
 echo ""
-echo "📝 Notes:"
-echo "- Docker service is now enabled and running"
-echo "- You may need to logout and login for docker group membership to take effect"
-echo "- VS Code can be launched with 'code' command"
-echo "- Use '7z' command for 7-Zip archive operations"
-echo "- Python pip packages can be installed with 'pip3' or 'python3 -m pip'"
-echo "- Node.js packages can be installed with 'npm' or 'yarn'"
+echo "✅ Development Tools (layered):"
+echo "  - Node.js & npm"
+echo "  - GCC/G++ compiler"
+echo "  - Make & CMake"
+echo "  - Java (OpenJDK)"
+echo "  - Vim & Neovim"
+echo ""
+echo "📝 Next Steps:"
+echo "  1. Reboot your system to apply rpm-ostree changes:"
+echo "     sudo systemctl reboot"
+echo ""
+echo "  2. After reboot, verify installations:"
+echo "     node --version"
+echo "     npm --version"
+echo "     java -version"
+echo ""
+echo "  3. Launch Flatpak apps from your application menu or via:"
+echo "     flatpak run <app-id>"
 echo ""
 echo "🎉 Setup completed successfully!"
