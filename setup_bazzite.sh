@@ -61,6 +61,37 @@ else
 fi
 echo ""
 
+# Install Docker
+echo "============================================"
+echo "Installing Docker"
+echo "============================================"
+echo ""
+
+if command -v docker >/dev/null 2>&1; then
+    echo "✅ Docker already installed; skipping."
+else
+    echo "🐳 Installing Docker..."
+    if command -v rpm-ostree >/dev/null 2>&1; then
+        # On rpm-ostree systems (like Bazzite), layer Docker packages
+        sudo rpm-ostree install docker docker-compose
+        echo "⚠️  Docker layered - reboot required to use Docker"
+    else
+        sudo dnf install -y docker docker-compose
+    fi
+    
+    # Enable and start Docker service (will take effect after reboot on rpm-ostree)
+    sudo systemctl enable docker
+    
+    # Add current user to docker group to run docker without sudo
+    echo "👤 Adding user to docker group..."
+    sudo usermod -aG docker "$USER"
+    
+    echo "✅ Docker installed successfully"
+    echo "💡 After rebooting, verify Docker with: docker --version"
+    echo "💡 You'll need to log out and back in (or reboot) for group changes to take effect"
+fi
+echo ""
+
 # Install GUI applications via Flatpak
 echo "============================================"
 echo "Installing GUI Applications"
@@ -218,6 +249,7 @@ echo "  - Vietnamese input (fcitx5 + Unikey)"
 echo ""
 echo "✅ Development Tools (layered):"
 echo "  - Node.js & npm"
+echo "  - Docker & Docker Compose"
 echo "  - GCC/G++ compiler"
 echo "  - Make & CMake"
 echo "  - Java (OpenJDK)"
@@ -230,6 +262,7 @@ echo ""
 echo "  2. After reboot, verify installations:"
 echo "     node --version"
 echo "     npm --version"
+echo "     docker --version"
 echo "     java -version"
 echo ""
 echo "  3. Launch Flatpak apps from your application menu or via:"
