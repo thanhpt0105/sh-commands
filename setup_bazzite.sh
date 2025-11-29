@@ -72,23 +72,15 @@ if command -v docker >/dev/null 2>&1; then
 else
     echo "🐳 Installing Docker..."
     if command -v rpm-ostree >/dev/null 2>&1; then
-        # On rpm-ostree systems (like Bazzite), layer Docker packages
-        sudo rpm-ostree install docker docker-compose
+        # On rpm-ostree systems (like Bazzite), using podman-docker as a Docker-compatible backend
+        sudo rpm-ostree install podman-docker podman-compose
         echo "⚠️  Docker layered - reboot required to use Docker"
     else
-        sudo dnf install -y docker docker-compose
+        sudo dnf install -y podman-docker podman-compose
     fi
-    
-    # Enable and start Docker service (will take effect after reboot on rpm-ostree)
-    sudo systemctl enable docker
-    
-    # Add current user to docker group to run docker without sudo
-    echo "👤 Adding user to docker group..."
-    sudo usermod -aG docker "$USER"
     
     echo "✅ Docker installed successfully"
     echo "💡 After rebooting, verify Docker with: docker --version"
-    echo "💡 You'll need to log out and back in (or reboot) for group changes to take effect"
 fi
 echo ""
 
